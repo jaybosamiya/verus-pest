@@ -1,0 +1,135 @@
+//! A Verus grammar
+//!
+//! Explicitly ignores regions of the code that are outside the `verus!` macro.
+
+// Legend:
+//
+//    //!         - documentation comment, for the full grammar
+//    ///         - documentation comment
+//    //          - comment
+//    x = { y }   - non-terminal definition
+//    x = _{ y }  - silent non-terminal definition
+//    x = @{ y }  - atomic non-terminal definition
+//    ( .. )      - grouping
+//    x ~ y       - and-then (sequencing)
+//    !x          - look-ahead negation
+//    x*          - repetition
+//    x+          - at-least-one repetition
+//    x?          - optional
+//    x | y       - alternation
+
+/// Allowed whitespace between any tokens in the grammar; completely ignored when the parsing is
+/// done (except in cases such as strings or comments)
+WHITESPACE = _{
+  " " | "\t" | NEWLINE
+}
+
+/// Comment syntax, not ignored in the syntax tree that is parsed (notice the lack of an `_`, unlike
+/// in `WHITESPACE`). Allowed to exist between any tokens (except atomic tokens, of course)
+COMMENT = @{
+    // Outer docstring
+    ("//!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) |
+    // Inner docstring
+    ("///" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) |
+    // Multiline comment
+    ("/*" ~ (!"*/" ~ ANY)* ~ "*/") |
+    // Singleline comment
+    ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
+}
+
+/// The entirety of a Verus source file
+file = {
+    SOI ~
+    (non_verus ~ verus_macro_use)* ~
+    non_verus? ~
+    EOI
+}
+
+/// Region of code that doesn't contain any Verus macro use whatsoever
+non_verus = @{
+  (!"verus!" ~ ANY)*
+}
+
+/// An actual use of the `verus! { ... }` macro
+verus_macro_use = {
+    "verus!" ~ "{" ~ verus_macro_body ~ "}"
+}
+
+/// Anything inside the `verus! { ... }` macro
+verus_macro_body = {
+    // TODO: FIXME
+    trait | function
+}
+
+visibility = { "pub" ~ ("(" ~ ("crate") ~ ")")? }
+
+openness = { "open" | "closed" }
+
+function_kind = { "spec" | "proof" | "exec" }
+
+mutable = { "mut" }
+
+identifier = @{
+    (ASCII_ALPHA | "_") ~
+    (ASCII_ALPHANUMERIC | "_")*
+}
+
+lifetime = @{
+    "'" ~ identifier
+}
+
+type_identifier = {
+    ("&" ~ lifetime? ~ mutable?)? ~ identifier
+}
+
+value_with_type = {
+    mutable? ~ identifier ~ ":" ~ type_identifier
+}
+
+function_parameter_list = {
+    ("self" | "&self" | ("&mut" ~ "self") | value_with_type) ~
+    ("," ~ value_with_type)* ~
+    ","?
+}
+
+function_return_type = {
+    ("(" ~ value_with_type ~ ")") |
+    type_identifier
+}
+
+comma_separated_exprs = {
+    expr ~ ("," ~ expr)* ~ ","?
+}
+
+attribute = {
+    "#" ~ "[" ~ (!"]" ~ ANY)* ~ "]"
+}
+
+function_body = {
+    expr
+}
+
+function = {
+    attribute* ~
+    visibility? ~
+    openness? ~
+    function_kind? ~
+    "fn" ~
+        identifier ~
+        "(" ~ function_parameter_list ~ ")" ~
+        ("->" ~ function_return_type)? ~
+      ("requires" ~ comma_separated_exprs)? ~
+      ("ensures" ~ comma_separated_exprs)? ~
+      ("recommends" ~ expr ~ ("via" ~ expr)?)? ~
+      ("decreases" ~ comma_separated_exprs ~ ("when" ~ expr ~ "via" ~ expr)?)? ~
+    (("{" ~ function_body ~ "}") | ";")
+}
+
+trait = {
+    "trait" ~ identifier ~ "{" ~ function* ~ "}"
+}
+
+expr = {
+    // TODO FIXME
+    ANY*
+}
