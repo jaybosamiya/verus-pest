@@ -87,10 +87,35 @@ identifier = @{
     (ASCII_ALPHANUMERIC | "_")*
 }
 
+hex_number = @{
+    "0x" ~ (ASCII_HEX_DIGIT | "_")+
+}
+
+decimal_number = @{
+    (ASCII_DIGIT | "_")+
+}
+
+octal_number = @{
+    "0o" ~ (ASCII_OCT_DIGIT | "_")+
+}
+
+binary_number = @{
+    "0b" ~ ("0" | "1" | "_")+
+}
+
 int_number = @{
-    ("0x" | "0o" | "0b")? ~
-    (ASCII_DIGIT | "_")+ ~
-    ("usize" | "u8" | "u16" | "u32" | "u64" | "u128" | "isize" | "i8" | "i16" | "i32" | "i64" | "i128" | "int" | "nat")?
+    (
+        hex_number
+      | decimal_number
+      | octal_number
+      | binary_number
+    ) ~
+    (
+        "usize" | "u8" | "u16" | "u32" | "u64" | "u128"
+      | "isize" | "i8" | "i16" | "i32" | "i64" | "i128"
+      | "int"
+      | "nat"
+    )?
 }
 
 float_number = @{
