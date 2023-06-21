@@ -37,9 +37,11 @@ WHITESPACE = _{
   " " | "\t" | NEWLINE
 }
 
-/// Comment syntax, not ignored in the syntax tree that is parsed (notice the lack of an `_`, unlike
-/// in `WHITESPACE`). Allowed to exist between any tokens (except atomic tokens, of course)
-COMMENT = @{
+/// Comment syntax, ignored in the syntax tree that is parsed. Allowed to exist
+/// between any tokens (except atomic tokens, of course).
+///
+/// To maintain whitepsace, replace out the `_{` with a `@{`.
+COMMENT = _{
     // Outer docstring
     ("//!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
     // Inner docstring
@@ -478,7 +480,7 @@ meta = {
 
 stmt = {
     ";"
-  | expr_stmt
+  | expr ~ ";"
   | item
   | let_stmt
 }
@@ -492,10 +494,6 @@ let_stmt = {
 
 let_else = {
     "else" ~ block_expr
-}
-
-expr_stmt = {
-    expr ~ ";"?
 }
 
 // This split of `expr` and `expr_inner` is to simply break the left-recursion
@@ -515,6 +513,8 @@ expr = {
       | "?"
         // view_expr
       | "@"
+        // index_expr
+      | "[" ~ expr ~ "]"
     )*
 }
 
@@ -528,7 +528,6 @@ expr_inner = {
   | continue_expr
   | for_expr
   | if_expr
-  | index_expr
   | literal
   | loop_expr
   | macro_call
@@ -588,7 +587,7 @@ ref_expr = {
 }
 
 block_expr = {
-    attr* ~ label? ~ ("try" | "unsafe" | "async" | "const") ~ stmt_list
+    attr* ~ label? ~ ("try" | "unsafe" | "async" | "const")? ~ stmt_list
 }
 
 prefix_expr = {
@@ -617,10 +616,6 @@ array_expr = {
         expr ~ ";" ~ expr
       | (expr ~ ("," ~ expr)* ~ ","?)?
     ) ~ "]"
-}
-
-index_expr = {
-    attr* ~ #base=expr ~ "[" ~ #index=expr ~ "]"
 }
 
 tuple_expr = {
