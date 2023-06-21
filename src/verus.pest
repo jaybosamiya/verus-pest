@@ -972,11 +972,7 @@ recommends_clause = {
 }
 
 decreases_clause = {
-    "decreases" ~ comma_delimited_exprs_for_verus_clauses
-}
-
-signature_decreases = {
-    decreases_clause ~ ("when" ~ expr)? ~ ("via" ~ expr)?
+    "decreases" ~ comma_delimited_exprs_for_verus_clauses ~ ("when" ~ expr)? ~ ("via" ~ expr)?
 }
 
 assert_expr = {
