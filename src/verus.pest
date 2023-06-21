@@ -290,7 +290,7 @@ param_list = {
     "(" ~ (
         (self_param ~ ",")? ~ param ~ ("," ~ param)*
       | self_param
-    ) ~ ","? ~ ")"
+    )? ~ ","? ~ ")"
   | "|" ~ (param ~ ("," ~ param)* ~ ","?)? ~ "|"
 }
 
