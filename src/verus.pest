@@ -988,7 +988,7 @@ assert_forall_expr = {
 }
 
 prover = {
-    "by" ~ "(" ~ name ~ ")"
+    "by" ~ ("(" ~ name ~ ")")?
 }
 
 trigger_attribute = {
