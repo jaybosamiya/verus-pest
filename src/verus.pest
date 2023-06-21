@@ -612,12 +612,12 @@ paren_expr = {
 array_expr = {
     attr* ~ "[" ~ attr* ~ (
         expr ~ ";" ~ expr
-      | (expr ~ ("," ~ expr)* ~ ","?)?
+      | comma_delimited_exprs?
     ) ~ "]"
 }
 
 tuple_expr = {
-    attr* ~ "(" ~ attr* ~ (expr ~ ("," ~ expr)* ~ ","?)? ~ ")"
+    attr* ~ "(" ~ attr* ~ comma_delimited_exprs? ~ ")"
 }
 
 record_expr = {
@@ -637,7 +637,7 @@ record_expr_field = {
 }
 
 arg_list = {
-    "(" ~ (expr ~ ("," ~ expr)* ~ ","?)? ~ ")"
+    "(" ~ comma_delimited_exprs? ~ ")"
 }
 
 closure_expr = {
@@ -935,24 +935,28 @@ data_mode = {
   | "tracked"
 }
 
+comma_delimited_exprs = {
+    (expr ~ ("," ~ expr)* ~ ","?)
+}
+
 requires_clause = {
-    "requires" ~ (expr ~ ("," ~ expr)* ~ ","?)
+    "requires" ~ comma_delimited_exprs
 }
 
 ensures_clause = {
-    "ensures" ~ (expr ~ ("," ~ expr)* ~ ","?)
+    "ensures" ~ comma_delimited_exprs
 }
 
 invariant_clause = {
-    "invariant" ~ (expr ~ ("," ~ expr)* ~ ","?)
+    "invariant" ~ comma_delimited_exprs
 }
 
 recommends_clause = {
-    "recommends" ~ (expr ~ ("," ~ expr)* ~ ","?) ~ ("via" ~ expr)?
+    "recommends" ~ comma_delimited_exprs ~ ("via" ~ expr)?
 }
 
 decreases_clause = {
-    "decreases" ~ (expr ~ ("," ~ expr)* ~ ","?)
+    "decreases" ~ comma_delimited_exprs
 }
 
 signature_decreases = {
@@ -976,5 +980,5 @@ prover = {
 }
 
 trigger_attribute = {
-    "#" ~ "!" ~ "[" ~ "trigger" ~ (expr ~ ("," ~ expr)* ~ ","?)? ~ "]"
+    "#" ~ "!" ~ "[" ~ "trigger" ~ comma_delimited_exprs? ~ "]"
 }
