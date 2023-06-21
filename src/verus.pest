@@ -526,6 +526,9 @@ expr = {
 
 expr_inner = {
     array_expr
+  | assert_expr
+  | assume_expr
+  | assert_forall_expr
   | block_expr
   | box_expr
   | break_expr
@@ -549,9 +552,6 @@ expr_inner = {
   | yeet_expr
   | let_expr
   | underscore_expr
-  | assert_expr
-  | assume_expr
-  | assert_forall_expr
 }
 
 macro_expr = {
