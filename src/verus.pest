@@ -590,7 +590,7 @@ ref_expr = {
 }
 
 block_expr = {
-    attr* ~ label? ~ ("try" | "unsafe" | "async" | "const")? ~ stmt_list
+    attr* ~ label? ~ ("try" | "unsafe" | "async" | "const" | "proof")? ~ stmt_list
 }
 
 prefix_expr = {
