@@ -667,9 +667,10 @@ arg_list = {
 }
 
 closure_expr = {
-    attr* ~ ("for" ~ generic_param_list)? ~
-    "const"? ~ "static"? ~ "async"? ~ "move" ~ "forall"? ~ "exists"? ~
-    param_list ~ ret_type? ~ attr* ~
+    attr* ~ (!"forall" ~ "for" ~ generic_param_list)? ~
+    "const"? ~ "static"? ~ "async"? ~ "move"? ~ "forall"? ~ "exists"? ~ "choose"? ~
+    param_list ~ ret_type? ~
+    attr* ~
     expr
 }
 
