@@ -1,9 +1,11 @@
-extern crate pest;
-#[macro_use]
-extern crate pest_derive;
-
 use anyhow::anyhow;
 use pest::Parser;
+use pest_derive::Parser;
+
+// Turns out, pest_derive (for some unknown reason, on our grammar, but not on smaller examples)
+// requires us to specify `extern crate alloc`; since we're already in std land, this is perfectly
+// fine, but weird that it is needed.
+extern crate alloc;
 
 #[derive(Parser)]
 #[grammar = "verus.pest"]
