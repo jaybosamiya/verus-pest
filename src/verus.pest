@@ -936,27 +936,31 @@ data_mode = {
 }
 
 comma_delimited_exprs = {
-    (expr ~ ("," ~ expr)* ~ ","?)
+    expr ~ ("," ~ expr)* ~ ","?
+}
+
+comma_delimited_exprs_with_no_curly = {
+    expr ~ ("," ~ !"{" ~ expr)* ~ ","?
 }
 
 requires_clause = {
-    "requires" ~ comma_delimited_exprs
+    "requires" ~ comma_delimited_exprs_with_no_curly
 }
 
 ensures_clause = {
-    "ensures" ~ comma_delimited_exprs
+    "ensures" ~ comma_delimited_exprs_with_no_curly
 }
 
 invariant_clause = {
-    "invariant" ~ comma_delimited_exprs
+    "invariant" ~ comma_delimited_exprs_with_no_curly
 }
 
 recommends_clause = {
-    "recommends" ~ comma_delimited_exprs ~ ("via" ~ expr)?
+    "recommends" ~ comma_delimited_exprs_with_no_curly ~ ("via" ~ expr)?
 }
 
 decreases_clause = {
-    "decreases" ~ comma_delimited_exprs
+    "decreases" ~ comma_delimited_exprs_with_no_curly
 }
 
 signature_decreases = {
