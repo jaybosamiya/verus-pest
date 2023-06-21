@@ -41,13 +41,17 @@ WHITESPACE = _{
 /// in `WHITESPACE`). Allowed to exist between any tokens (except atomic tokens, of course)
 COMMENT = @{
     // Outer docstring
-    ("//!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) |
+    ("//!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
     // Inner docstring
-    ("///" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) |
+  | ("///" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
     // Multiline comment
-    ("/*" ~ (!"*/" ~ ANY)* ~ "*/") |
+  | multiline_comment
     // Singleline comment
-    ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
+  | ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
+}
+
+multiline_comment = @{
+    "/*" ~ (multiline_comment | (!"*/" ~ ANY))* ~ "*/"
 }
 
 /// The entirety of a Verus source file
