@@ -278,6 +278,7 @@ fn = {
     attr* ~ visibility? ~ publish? ~
     "default"? ~ "const"? ~ "async"? ~ "unsafe"? ~ abi? ~ fn_mode? ~
     "fn" ~ name ~ generic_param_list? ~ param_list ~ ret_type? ~
+    prover? ~
     where_clause? ~ requires_clause? ~ recommends_clause? ~ ensures_clause? ~ decreases_clause? ~
     (block_expr | ";")
 }
