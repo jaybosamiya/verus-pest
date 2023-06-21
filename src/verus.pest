@@ -939,28 +939,40 @@ comma_delimited_exprs = {
     expr ~ ("," ~ expr)* ~ ","?
 }
 
-comma_delimited_exprs_with_no_curly = {
-    expr ~ ("," ~ !"{" ~ expr)* ~ ","?
+comma_delimited_exprs_for_verus_clauses = {
+    expr ~ ("," ~ !verus_clause_non_expr ~ expr)* ~ ","?
+}
+
+verus_clause_non_expr = _{
+    "{"
+  | "requires"
+  | "ensures"
+  | "invariant"
+  | "recommends"
+  | "recommends"
+  | "via"
+  | "decreases"
+  | "when"
 }
 
 requires_clause = {
-    "requires" ~ comma_delimited_exprs_with_no_curly
+    "requires" ~ comma_delimited_exprs_for_verus_clauses
 }
 
 ensures_clause = {
-    "ensures" ~ comma_delimited_exprs_with_no_curly
+    "ensures" ~ comma_delimited_exprs_for_verus_clauses
 }
 
 invariant_clause = {
-    "invariant" ~ comma_delimited_exprs_with_no_curly
+    "invariant" ~ comma_delimited_exprs_for_verus_clauses
 }
 
 recommends_clause = {
-    "recommends" ~ comma_delimited_exprs_with_no_curly ~ ("via" ~ expr)?
+    "recommends" ~ comma_delimited_exprs_for_verus_clauses ~ ("via" ~ expr)?
 }
 
 decreases_clause = {
-    "decreases" ~ comma_delimited_exprs_with_no_curly
+    "decreases" ~ comma_delimited_exprs_for_verus_clauses
 }
 
 signature_decreases = {
