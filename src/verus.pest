@@ -853,13 +853,11 @@ pat = {
 }
 
 pat_inner = {
-    ident_pat
-  | box_pat
+    box_pat
   | rest_pat
   | literal_pat
   | macro_pat
   | paren_pat
-  | path_pat
   | wildcard_pat
   | end_only_range_pat
   | record_pat
@@ -868,6 +866,8 @@ pat_inner = {
   | tuple_pat
   | tuple_struct_pat
   | const_block_pat
+  | ident_pat
+  | path_pat
 }
 
 literal_pat = {
@@ -906,7 +906,7 @@ record_pat_field = {
 }
 
 tuple_struct_pat = {
-    path ~ "(" ~ (pat ~ (";" ~ pat)* ~ ","?)? ~ ")"
+    path ~ "(" ~ (pat ~ ("," ~ pat)* ~ ","?)? ~ ")"
 }
 
 tuple_pat = {
