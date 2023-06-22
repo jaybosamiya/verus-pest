@@ -369,6 +369,7 @@ tuple_field_list = {
 
 tuple_field = {
     attr* ~ visibility? ~
+    data_mode? ~
     type
 }
 
