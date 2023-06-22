@@ -493,7 +493,8 @@ visibility = {
 }
 
 attr = {
-    "#" ~ "!"? ~ "[" ~ meta ~ "]"
+    trigger_attribute
+  | "#" ~ "!"? ~ "[" ~ meta ~ "]"
 }
 
 meta = {
