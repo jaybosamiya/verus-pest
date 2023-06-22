@@ -176,9 +176,9 @@ lifetime = { lifetime_ident }
 path = { (path_segment ~ "::")* ~ path_segment }
 
 path_segment = {
-    "::"? ~ name_ref
-  | name_ref ~ generic_arg_list?
-  | name_ref ~ param_list ~ ret_type?
+    "::"? ~ name_ref ~ generic_arg_list?
+  | "::"? ~ name_ref ~ param_list ~ ret_type?
+  | "::"? ~ name_ref
   | "<" ~ path_type ~ ("as" ~ path_type)? ~ ">"
 }
 
