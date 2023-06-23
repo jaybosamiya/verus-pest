@@ -958,10 +958,10 @@ publish = {
 }
 
 fn_mode = {
-    "spec"
+    mode_spec_checked
+  | "spec"
   | "proof"
   | "exec"
-  | mode_spec_checked
 }
 
 mode_spec_checked = {
