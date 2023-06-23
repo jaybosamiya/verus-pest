@@ -508,6 +508,7 @@ meta = {
 
 stmt = {
     ";"
+  | proof_block
   | expr ~ ";"
   | item
   | let_stmt
@@ -617,8 +618,13 @@ ref_expr = {
     attr* ~ "&" ~ ("raw" | "mut" | "const") ~ expr
 }
 
+proof_block = {
+    attr* ~ label? ~ "proof" ~ stmt_list
+}
+
 block_expr = {
-    attr* ~ label? ~ ("try" | "unsafe" | "async" | "const" | "proof")? ~ stmt_list
+    proof_block
+    | attr* ~ label? ~ ("try" | "unsafe" | "async" | "const")? ~ stmt_list
 }
 
 prefix_expr = {
