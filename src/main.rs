@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use anyhow::anyhow;
 use pest::Parser;
 use pest_derive::Parser;
@@ -17,7 +19,17 @@ fn main() -> anyhow::Result<()> {
 
     let parsed = VerusParser::parse(Rule::file, &unparsed_file)?;
 
+    let parsed = parsed.flatten().collect::<Vec<_>>();
+
+    let parsed = parsed
+        .into_iter()
+        .filter(|p| matches!(p.as_rule(), Rule::expr_inner | Rule::expr))
+        .map(|p| p.as_str().trim())
+        .collect::<BTreeSet<_>>();
+
     println!("{parsed:#?}");
+
+    dbg!(parsed.len());
 
     Ok(())
 }
