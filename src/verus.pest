@@ -40,7 +40,7 @@ WHITESPACE = _{
 /// Comment syntax, ignored in the syntax tree that is parsed. Allowed to exist
 /// between any tokens (except atomic tokens, of course).
 ///
-/// To maintain whitepsace, replace out the `_{` with a `@{`.
+/// To maintain comments (rather than ignore them), replace the `_{` with a `@{`.
 COMMENT = _{
     // Outer docstring
     ("//!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
