@@ -934,7 +934,7 @@ for_expr = {
 }
 
 while_expr = {
-    attr* ~ label? ~ "while" ~ condition ~ invariant_clause? ~ decreases_clause? ~
+    attr* ~ label? ~ "while" ~ condition ~ invariant_clause? ~ ensures_clause? ~ decreases_clause? ~
     fn_block_expr
 }
 
