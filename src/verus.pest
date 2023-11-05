@@ -778,6 +778,7 @@ expr_with_block = {
   | if_expr
   | match_expr
   | assert_by_block_expr
+  | assert_forall_expr
 }
 
 macro_expr = {
@@ -1274,18 +1275,22 @@ assert_requires = {
     requires_clause
 }
 
+assert_expr_prefix = {
+    attr* ~ "assert" ~ "(" ~ expr ~ ")"
+}
+
 assert_by_block_expr = {
-    attr* ~ "assert" ~ "(" ~ expr ~ ")" ~ inline_prover ~ assert_requires? ~ block_expr
+    assert_expr_prefix ~ inline_prover ~ assert_requires? ~ block_expr
 }
 
 assert_by_prover_expr = {
     assert_by_block_expr
-  | attr* ~ "assert" ~ "(" ~ expr ~ ")" ~ inline_prover ~ assert_requires?
+  | assert_expr_prefix ~ inline_prover ~ assert_requires?
 }
 
 assert_expr = {
     assert_by_prover_expr
-  | attr* ~ "assert" ~ "(" ~ expr ~ ")"
+  | assert_expr_prefix
 }
 
 assume_expr = {
@@ -1293,7 +1298,7 @@ assume_expr = {
 }
 
 assert_forall_expr = {
-    attr* ~ "assert" ~ "(" ~ "forall" ~ closure_expr ~ ("implies" ~ expr)? ~ ")" ~ "by" ~ block_expr
+    attr* ~ "assert" ~ "forall" ~ closure_expr ~ ("implies" ~ expr)? ~ "by" ~ block_expr
 }
 
 inline_prover = {
