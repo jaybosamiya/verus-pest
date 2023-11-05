@@ -1,9 +1,7 @@
-#[allow(unused_imports)]
+#![allow(unused_imports)]
 use builtin_macros::*;
-#[allow(unused_imports)]
 use builtin::*;
-#[allow(unused_imports)]
-use vstd::{*, vec::*, seq::*, modes::*};
+use vstd::{*, prelude::*, seq::*, modes::*};
 
 #[verifier::external]
 fn main() {
@@ -537,6 +535,32 @@ trait T {
         ensures
             i <= r,
             j <= r;
+}
+
+enum ThisOrThat {
+    This(nat),
+    That { v: int },
+}
+
+proof fn uses_is(t: ThisOrThat) {
+    match t {
+        ThisOrThat::This(..) => assert(t is This),
+        ThisOrThat::That {..} => assert(t is That),
+    }
+}
+
+#[verifier::external_body]
+struct Collection { }
+
+impl Collection {
+    pub spec fn spec_has(&self, v: nat) -> bool;
+}
+
+proof fn uses_spec_has(c: Collection)
+    requires c has 3,
+{
+    assert(c has 3);
+    assert(c has 3 == c has 3);
 }
 
 } // verus!
