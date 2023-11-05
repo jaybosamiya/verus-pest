@@ -918,7 +918,10 @@ closure_expr = {
     expr
 }
 
-condition = { expr_no_struct }
+condition = {
+    "!" ~ condition
+  | expr_no_struct
+}
 
 if_expr = {
     attr* ~ "if" ~ condition ~ fn_block_expr ~
