@@ -282,7 +282,7 @@ const_arg = {
 }
 
 macro_call = {
-    attr* ~ path ~ "!" ~ !"=" ~ token_tree ~ ";"?
+    attr* ~ path ~ "!" ~ !"=" ~ token_tree
 }
 
 // See https://doc.rust-lang.org/beta/reference/tokens.html#punctuation
