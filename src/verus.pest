@@ -40,7 +40,7 @@ WHITESPACE = _{
 /// Comment syntax, ignored in the syntax tree that is parsed. Allowed to exist
 /// between any tokens (except atomic tokens, of course).
 ///
-/// To maintain comments (rather than ignore them), replace the `_{` with a `@{`.
+/// To maintain comments (rather than ignore them), replace the `_{` with a `@{`
 COMMENT = _{
     // Outer docstring
     ("//!" ~ (!NEWLINE ~ ANY)* ~ NEWLINE)
@@ -82,9 +82,13 @@ verus_macro_body = !{
 /// A valid identifier, currently only supports ASCII-based identifiers, but
 /// this probably should be extended in the future to correctly handle all
 /// allowed identifiers.
-identifier = @{
+identifier_string = @{
     (ASCII_ALPHA | "_") ~
     (ASCII_ALPHANUMERIC | "_")*
+}
+
+identifier = @{
+    !(keyword ~ !(ASCII_ALPHA | "_" | ASCII_ALPHANUMERIC)) ~ identifier_string
 }
 
 hex_number = @{
@@ -92,7 +96,7 @@ hex_number = @{
 }
 
 decimal_number = @{
-    (ASCII_DIGIT | "_")+
+    ASCII_DIGIT ~ ("_"? ~ ASCII_DIGIT)*
 }
 
 octal_number = @{
@@ -126,7 +130,7 @@ float_number = @{
 }
 
 lifetime_ident = @{
-    "'" ~ ("_" | identifier)
+    "'" ~ ("_" | "static" | identifier)
 }
 
 /// A valid string, accounting for escaped quotes too.
@@ -163,13 +167,75 @@ byte = @{
     "b" ~ char
 }
 
+
+// See https://doc.rust-lang.org/reference/keywords.html
+keyword = {
+    // Strict
+    "as"
+  | "break"
+  | "const"
+  | "continue"
+  | "crate"
+  | "else"
+  | "enum"
+  | "extern"
+  | "false"
+  | "fn"
+  | "for"
+  | "if"
+  | "impl"
+  | "in"
+  | "let"
+  | "loop"
+  | "match"
+  | "mod"
+  | "move"
+  | "mut"
+  | "pub"
+  | "ref"
+  | "return"
+  | "self"
+  | "Self"
+  | "static"
+  | "struct"
+  | "super"
+  | "trait"
+  | "true"
+  | "type"
+  | "unsafe"
+  | "use"
+  | "where"
+  | "while"
+  | "async"
+  | "await"
+  | "dyn"
+
+    // Reserved
+  | "abstract"
+  | "become"
+  | "box"
+  | "do"
+  | "final"
+  | "macro"
+  | "override"
+  | "priv"
+  | "typeof"
+  | "unsized"
+  | "virtual"
+  | "yield"
+  | "try"
+}
+
 //*************************//
 // Names, Paths and Macros //
 //*************************//
 
 name = { identifier | "self" }
 
-name_ref = { identifier | int_number | "self" | "super" | "crate" | "Self" }
+// name_ref is used below in path_segments, which Rust says cannot
+// contain numbers: https://doc.rust-lang.org/beta/reference/paths.html#paths-in-expressions
+//name_ref = { identifier | int_number | "self" | "super" | "crate" | "Self" }
+name_ref = { identifier | "self" | "super" | "crate" | "Self" }
 
 lifetime = { lifetime_ident }
 
@@ -182,8 +248,12 @@ path_segment = {
   | "<" ~ path_type ~ ("as" ~ path_type)? ~ ">"
 }
 
+generic_args = {
+    generic_arg ~ ("," ~ generic_arg)* ~ ","?
+}
+
 generic_arg_list = {
-    "::"? ~ "<" ~ (generic_arg ~ ("," ~ generic_arg)* ~ ","?)? ~ ">"
+    "::"? ~ "<" ~ generic_args? ~ ">"
 }
 
 generic_arg = {
@@ -215,11 +285,47 @@ macro_call = {
     attr* ~ path ~ "!" ~ token_tree ~ ";"?
 }
 
-// TODO Add actual token trees
+// See https://doc.rust-lang.org/beta/reference/tokens.html#punctuation
+punctuation = {
+    bin_expr_ops
+  | "!"
+  | "|||"
+  | "&&&"
+  | "@"
+  | "_"
+  | "."
+  | ".."
+  | "..."
+  | "..="
+  | ","
+  | ";"
+  | ":"
+  | "::"
+  | "->"
+  | "=>"
+  | "#"
+  | "$"
+  | "?"
+  | "~"
+}
+
+// See https://doc.rust-lang.org/beta/reference/tokens.html
+token = {
+    identifier
+  | literal
+  | lifetime_ident
+  | keyword 
+  | punctuation
+}
+
+delim_token_tree = {
+      "(" ~ token_tree* ~ ")"
+    | "[" ~ token_tree* ~ "]"
+    | "{" ~ token_tree* ~ "}"
+}
+
 token_tree = {
-    "(" ~ ")"
-  | "{" ~ "}"
-  | "[" ~ "]"
+    token | delim_token_tree
 }
 
 macro_items = {
@@ -299,13 +405,21 @@ use_tree_list = {
     "{" ~ (use_tree ~ ("," ~ use_tree)* ~ ","?)? ~ "}"
 }
 
+fn_qualifier = {
+    prover? ~ where_clause? ~ requires_clause? ~ recommends_clause? ~ decreases_clause? ~ ensures_clause?
+}
+
+fn_terminator = {
+    fn_block_expr
+  | ";"
+}
+
 fn = {
     attr* ~ visibility? ~ publish? ~
     "default"? ~ "const"? ~ "async"? ~ "unsafe"? ~ abi? ~ fn_mode? ~
     "fn" ~ name ~ generic_param_list? ~ param_list ~ ret_type? ~
-    prover? ~
-    where_clause? ~ requires_clause? ~ recommends_clause? ~ ensures_clause? ~ decreases_clause? ~
-    (block_expr | ";")
+    fn_qualifier ~
+    fn_terminator
 }
 
 abi = {
@@ -317,26 +431,29 @@ param_list = {
         (self_param ~ ",")? ~ param ~ ("," ~ param)*
       | self_param
     )? ~ ","? ~ ")"
-  | "|" ~ (param ~ ("," ~ param)* ~ ","?)? ~ "|"
+}
+
+closure_param_list = {
+    "|" ~ (param ~ ("," ~ param)* ~ ","?)? ~ "|"
 }
 
 self_param = {
     attr* ~ (
-        ("&" ~ lifetime?)? ~ "mut"? ~ name
-      | "mut"? ~ name ~ ":" ~ type
+        ("&" ~ lifetime?)? ~ "mut"? ~ "self"
+      | "mut"? ~ "self" ~ ":" ~ type
     )
 }
 
 param = {
     attr* ~ (
-        "tracked"? ~ pat ~ (":" ~ type)?
+        "tracked"? ~ pat_no_top_alt ~ (":" ~ type)?
         | type
         | "..."
     )
 }
 
 ret_type = {
-    "->" ~ ("tracked"? ~ ("(" ~ pat ~ ":" ~ type ~ ")" | type))
+    "->" ~ ("tracked"? ~ ("(" ~ name ~ ":" ~ type ~ ")" | type))
 }
 
 type_alias = {
@@ -403,7 +520,7 @@ const = {
     attr* ~ visibility? ~
     "default"? ~
     "const" ~ (name | "_") ~ ":" ~ type ~
-    ("=" ~ expr)? ~ ";"
+    "=" ~ expr? ~ ";"?  // Semi should not be included for const fn
 }
 
 static = {
@@ -424,8 +541,12 @@ trait_alias = {
     "trait" ~ name ~ generic_param_list? ~ "=" ~ type_bound_list? ~ where_clause? ~ ";"
 }
 
+assoc_items = {
+    assoc_item*
+}
+
 assoc_item_list = {
-    "{" ~ attr* ~ assoc_item* ~ "}"
+    "{" ~ attr* ~ assoc_items ~ "}"
 }
 
 assoc_item = {
@@ -509,9 +630,10 @@ meta = {
 stmt = {
     ";"
   | proof_block
+  | let_stmt
+  | expr_with_block ~ ";"?
   | expr ~ ";"
   | item
-  | let_stmt
 }
 
 let_stmt = {
@@ -529,31 +651,20 @@ let_else = {
 // that would happen otherwise.
 expr = {
     expr_inner ~
-    (
-        // await_expr
-        "." ~ "await"
-        // call_expr
-      | arg_list
-        // cast_expr
-      | "as" ~ type
-        // field_expr
-      | "." ~ name_ref
-        // try_expr
-      | "?"
-        // view_expr
-      | "@"
-        // index_expr
-      | "[" ~ expr ~ "]"
-        // method_call_expr
-      | "." ~ name_ref ~ generic_arg_list? ~ arg_list
-        // bin_expr
-      | bin_expr_ops ~ expr
-        // range_expr
-      | (".." | "..=") ~ expr?
-    )*
+    expr_outer*
 }
 
-expr_inner = {
+expr_no_struct = {
+    expr_inner_no_struct ~
+    expr_outer_no_struct*
+}
+
+// In certain places, like the conditional for an if_expr,
+// we have to prohibit struct_expr, since there is otherwise
+// an ambiguity between struct_expr and pattern_expr.  E.g.,
+//     let x = if b { 5 } else { 10 };
+//     let u = MyStruct { x: 2, y: 3 };
+expr_inner_no_struct = _{
     array_expr
   | assert_expr
   | assume_expr
@@ -561,6 +672,7 @@ expr_inner = {
   | block_expr
   | box_expr
   | break_expr
+  | prefix_expr
   | closure_expr
   | continue_expr
   | for_expr
@@ -570,9 +682,6 @@ expr_inner = {
   | macro_call
   | match_expr
   | paren_expr
-  | path_expr
-  | prefix_expr
-  | record_expr
   | ref_expr
   | return_expr
   | tuple_expr
@@ -581,6 +690,95 @@ expr_inner = {
   | yeet_expr
   | let_expr
   | underscore_expr
+  | path_expr   // Needs to be last, or it matches against keywords like "while"  
+}
+
+// The next three rules are defined to be atomic, since they
+// all require one or more explicit whitespace tokens.
+// This avoids, e.g., parsing "assert" has "as sert".
+expr_as = ${
+    "as" ~ WHITESPACE+ ~ type
+}
+
+expr_has = ${
+    "has" ~ WHITESPACE+ ~ expr
+}
+
+expr_is = ${
+    "is" ~ WHITESPACE+ ~ type
+}
+
+expr_outer = _{
+    // await_expr
+    "." ~ "await"
+    // call_expr
+    | arg_list
+    // cast_expr
+    | expr_as
+    // collection test
+    | expr_has
+    // datatype test
+    | expr_is
+    // field_expr
+    | "." ~ name_ref
+    // tuple index
+    | "." ~ int_number
+    // try_expr
+    | "?"
+    // view_expr
+    | "@"
+    // index_expr
+    | "[" ~ expr ~ "]"
+    // method_call_expr
+    | "." ~ name_ref ~ generic_arg_list? ~ arg_list
+    // bin_expr
+    | bin_expr_ops ~ expr
+    // range_expr
+    | (".." | "..=") ~ expr?
+}
+
+expr_outer_no_struct = _{
+    // await_expr
+    "." ~ "await"
+    // call_expr
+    | arg_list
+    // cast_expr
+    | expr_as
+    // collection test
+    | expr_has
+    // datatype test
+    | expr_is
+    // field_expr
+    | "." ~ name_ref
+    // tuple index
+    | "." ~ int_number
+    // try_expr
+    | "?"
+    // view_expr
+    | "@"
+    // index_expr
+    | "[" ~ expr_no_struct ~ "]"
+    // method_call_expr
+    | "." ~ name_ref ~ generic_arg_list? ~ arg_list
+    // bin_expr
+    | bin_expr_ops ~ expr_no_struct
+    // range_expr
+    | (".." | "..=") ~ expr_no_struct?
+}
+
+expr_inner = {
+    if_expr  // Must precede struct_expr or struct_expr thinks `if {}` is a struct
+  | struct_expr // Must precede expr_inner_no_struct or `my_struct { }` will be `my_struct`: path_expr
+  | expr_inner_no_struct
+}
+
+expr_with_block = {
+    block_expr
+  | loop_expr
+  | if_expr
+  | match_expr
+  | assert_by_block_expr
+  | assert_forall_expr
 }
 
 macro_expr = {
@@ -615,7 +813,7 @@ stmt_list = {
 }
 
 ref_expr = {
-    attr* ~ "&" ~ ("raw" | "mut" | "const") ~ expr
+    attr* ~ "&" ~ ("raw" | "mut" | "const")? ~ expr
 }
 
 proof_block = {
@@ -627,37 +825,70 @@ block_expr = {
     | attr* ~ label? ~ ("try" | "unsafe" | "async" | "const")? ~ stmt_list
 }
 
+fn_block_expr = {
+    "{" ~
+    attr* ~
+    stmt* ~
+    expr? ~
+    "}"
+}
+
 prefix_expr = {
     attr* ~ ("-" | "!" | "*" | "&&&" | "|||") ~ expr
 }
 
+assignment_ops = {
+    "=" | "+=" | "/=" | "*=" | "%=" | ">>=" | "<<=" | "-=" | "|=" | "&=" | "^="
+}
+
+bin_expr_ops_special = {
+    "&&&" | "|||"
+}
+
+bin_expr_ops_normal = {
+    | ("||" | "|")
+    | ("&&" | "&")
+    | "<==>"
+    | "==="
+    | "==>" | "<=="
+    | "!=="
+    | "==" | "!=" | "<=" | ">=" | "<" | ">"
+    | "+" | "*" | "-" | "/" | "%" | "<<" | ">>" | "^"
+    | assignment_ops
+}
+
 bin_expr_ops = {
-    ("|||" | "||" | "|")
-  | ("&&&" | "&&" | "&")
-  | "<==>"
-  | "==>" | "<=="
-  | "!=="
-  | "==" | "!=" | "<=" | ">=" | "<" | ">"
-  | "+" | "*" | "-" | "/" | "%" | "<<" | ">>" | "^"
-  | "=" | "+=" | "/=" | "*=" | "%=" | ">>=" | "<<=" | "-=" | "|=" | "&=" | "^="
+    bin_expr_ops_special | bin_expr_ops_normal
+}
+
+paren_expr_inner = {
+    "(" ~ expr ~ ")"
 }
 
 paren_expr = {
-    attr* ~ "(" ~ expr ~ ")"
+    attr* ~ paren_expr_inner
 }
 
-array_expr = {
-    attr* ~ "[" ~ attr* ~ (
+array_expr_inner = {
+    "[" ~ attr* ~ (
         expr ~ ";" ~ expr
       | comma_delimited_exprs?
     ) ~ "]"
 }
 
-tuple_expr = {
-    attr* ~ "(" ~ attr* ~ comma_delimited_exprs? ~ ")"
+array_expr = {
+    attr* ~ array_expr_inner
 }
 
-record_expr = {
+tuple_expr_inner = {
+    "(" ~ attr* ~ comma_delimited_exprs? ~ ")"
+}
+
+tuple_expr = {
+    attr* ~ tuple_expr_inner
+}
+
+struct_expr = {
     path ~ record_expr_field_list
 }
 
@@ -680,28 +911,30 @@ arg_list = {
 closure_expr = {
     attr* ~ (!"forall" ~ "for" ~ generic_param_list)? ~
     "const"? ~ "static"? ~ "async"? ~ "move"? ~ "forall"? ~ "exists"? ~ "choose"? ~
-    param_list ~ ret_type? ~
+    closure_param_list ~ ret_type? ~
     attr* ~
     expr
 }
 
+condition = { expr_no_struct }
+
 if_expr = {
-    attr* ~ "if" ~ expr ~ block_expr ~
-    ("else" ~ (if_expr | block_expr))?
+    attr* ~ "if" ~ condition ~ fn_block_expr ~
+    ("else" ~ (if_expr | fn_block_expr))?
 }
 
 loop_expr = {
-    attr* ~ label? ~ "loop" ~ block_expr
+    attr* ~ label? ~ "loop" ~ fn_block_expr
 }
 
 for_expr = {
-    attr* ~ label? ~ "for" ~ pat ~ "in" ~ expr ~
-    block_expr
+    attr* ~ label? ~ "for" ~ pat ~ "in" ~ expr_no_struct ~
+    fn_block_expr
 }
 
 while_expr = {
-    attr* ~ label? ~ "while" ~ expr ~ invariant_clause? ~ decreases_clause? ~
-    block_expr
+    attr* ~ label? ~ "while" ~ condition ~ invariant_clause? ~ decreases_clause? ~
+    fn_block_expr
 }
 
 label = {
@@ -727,8 +960,12 @@ match_arm_list = {
     "}"
 }
 
+match_arm_lhs = {
+    attr* ~ pat ~ match_guard?
+}
+
 match_arm = {
-    attr* ~ pat ~ match_guard? ~ "=>" ~ expr ~ ","?
+    match_arm_lhs ~ "=>" ~ expr ~ ","?
 }
 
 match_guard = {
@@ -859,13 +1096,20 @@ pat = {
     )?
 }
 
+pat_no_top_alt = {
+    pat_inner ~ (
+        // range_pat (for 1.. or 1..2)
+        ("..=" | "..") ~ pat_no_top_alt?
+    )?
+}
+
 pat_inner = {
     box_pat
   | rest_pat
   | literal_pat
   | macro_pat
   | paren_pat
-  | wildcard_pat
+//  | wildcard_pat
   | end_only_range_pat
   | record_pat
   | ref_pat
@@ -873,8 +1117,8 @@ pat_inner = {
   | tuple_pat
   | tuple_struct_pat
   | const_block_pat
-  | ident_pat
   | path_pat
+  | ident_pat
 }
 
 literal_pat = {
@@ -912,8 +1156,12 @@ record_pat_field = {
     attr* ~ (name_ref ~ ":")? ~ pat
 }
 
+tuple_struct_pat_inner = {
+    "(" ~ (pat ~ ("," ~ pat)* ~ ","?)? ~ ")"
+}
+
 tuple_struct_pat = {
-    path ~ "(" ~ (pat ~ ("," ~ pat)* ~ ","?)? ~ ")"
+    path ~ tuple_struct_pat_inner
 }
 
 tuple_pat = {
@@ -977,16 +1225,26 @@ comma_delimited_exprs = {
     expr ~ ("," ~ expr)* ~ ","?
 }
 
+// Prohibit top-level struct_expr, to avoid ambiguity for something like:
+//    pub fn alice_addr(a:int) -> (b:int)
+//        ensures a == b
+//    {
+//        a
+//    }
+// where we could interpret the ensures expression as `a == b { a }`
 comma_delimited_exprs_for_verus_clauses = {
-    expr ~ ("," ~ !verus_clause_non_expr ~ expr)* ~ ","?
+    expr_no_struct ~ ("," ~ !verus_clause_non_expr ~ expr_no_struct)* ~ ","?
+}
+
+groupable_comma_delimited_exprs_for_verus_clauses = {
+    comma_delimited_exprs_for_verus_clauses
 }
 
 verus_clause_non_expr = _{
-    "{"
+    "{"             // TODO: Why is this permitted here?
   | "requires"
   | "ensures"
   | "invariant"
-  | "recommends"
   | "recommends"
   | "via"
   | "decreases"
@@ -1006,15 +1264,33 @@ invariant_clause = {
 }
 
 recommends_clause = {
-    "recommends" ~ comma_delimited_exprs_for_verus_clauses ~ ("via" ~ expr)?
+    "recommends" ~ comma_delimited_exprs_for_verus_clauses ~ ("via" ~ expr_no_struct)?
 }
 
 decreases_clause = {
-    "decreases" ~ comma_delimited_exprs_for_verus_clauses ~ ("when" ~ expr)? ~ ("via" ~ expr)?
+    "decreases" ~ groupable_comma_delimited_exprs_for_verus_clauses ~ ("when" ~ expr_no_struct)? ~ ("via" ~ expr_no_struct)?
+}
+
+assert_requires = {
+    requires_clause
+}
+
+assert_expr_prefix = {
+    attr* ~ "assert" ~ "(" ~ expr ~ ")"
+}
+
+assert_by_block_expr = {
+    assert_expr_prefix ~ inline_prover ~ assert_requires? ~ block_expr
+}
+
+assert_by_prover_expr = {
+    assert_by_block_expr
+  | assert_expr_prefix ~ inline_prover ~ assert_requires?
 }
 
 assert_expr = {
-    attr* ~ "assert" ~ "(" ~ expr ~ ")" ~ (prover ~ requires_clause? ~ block_expr?)?
+    assert_by_prover_expr
+  | assert_expr_prefix
 }
 
 assume_expr = {
@@ -1023,6 +1299,10 @@ assume_expr = {
 
 assert_forall_expr = {
     attr* ~ "assert" ~ "forall" ~ closure_expr ~ ("implies" ~ expr)? ~ "by" ~ block_expr
+}
+
+inline_prover = {
+    prover
 }
 
 prover = {
