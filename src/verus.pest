@@ -631,8 +631,8 @@ stmt = {
     ";"
   | proof_block
   | let_stmt
-  | expr ~ ";"
   | expr_with_block ~ ";"?
+  | expr ~ ";"
   | item
 }
 
@@ -777,6 +777,7 @@ expr_with_block = {
   | loop_expr
   | if_expr
   | match_expr
+  | assert_by_block_expr
 }
 
 macro_expr = {
@@ -1273,8 +1274,18 @@ assert_requires = {
     requires_clause
 }
 
+assert_by_block_expr = {
+    attr* ~ "assert" ~ "(" ~ expr ~ ")" ~ inline_prover ~ assert_requires? ~ block_expr
+}
+
+assert_by_prover_expr = {
+    assert_by_block_expr
+  | attr* ~ "assert" ~ "(" ~ expr ~ ")" ~ inline_prover ~ assert_requires?
+}
+
 assert_expr = {
-    attr* ~ "assert" ~ "(" ~ expr ~ ")" ~ (inline_prover ~ assert_requires? ~ block_expr?)?
+    assert_by_prover_expr
+  | attr* ~ "assert" ~ "(" ~ expr ~ ")"
 }
 
 assume_expr = {
