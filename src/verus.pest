@@ -776,6 +776,7 @@ expr_with_block = {
     block_expr
   | loop_expr
   | if_expr
+  | while_expr
   | match_expr
   | assert_by_block_expr
   | assert_forall_expr
