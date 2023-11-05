@@ -638,8 +638,8 @@ stmt = {
 
 let_stmt = {
     attr* ~ "let" ~ "ghost"? ~ "tracked"? ~ "mut"? ~ pat ~ (":" ~ type)? ~
-    "=" ~ expr ~
-    let_else? ~
+    ("=" ~ expr ~
+    let_else?)? ~
     ";"
 }
 
