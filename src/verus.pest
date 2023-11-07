@@ -631,6 +631,7 @@ stmt = {
     ";"
   | proof_block
   | let_stmt
+  | assignment_stmt
   | expr_with_block ~ ";"?
   | expr ~ ";"
   | item
@@ -645,6 +646,10 @@ let_stmt = {
 
 let_else = {
     "else" ~ block_expr
+}
+
+assignment_stmt = {
+    "*"* ~ path ~ assignment_ops ~ expr ~ ";"
 }
 
 // This split of `expr` and `expr_inner` is to simply break the left-recursion
