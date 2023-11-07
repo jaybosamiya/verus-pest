@@ -1009,6 +1009,7 @@ type = {
     array_type
   | dyn_trait_type
   | fn_ptr_type
+  | fn_trait_type
   | for_type
   | impl_trait_type
   | infer_type
@@ -1064,6 +1065,17 @@ infer_type = {
 
 fn_ptr_type = {
     "const"? ~ "async"? ~ "unsafe"? ~ abi? ~ "fn" ~ param_list ~ ret_type?
+}
+
+fn_traits = {
+    "FnOnce"
+  | "FnMut"
+  | "FnSpec" // note: fnspec is not _really_ a trait, but parses same as others, so we keep it here
+  | "Fn"
+}
+
+fn_trait_type = {
+    fn_traits ~ param_list ~ ret_type?
 }
 
 for_type = {
