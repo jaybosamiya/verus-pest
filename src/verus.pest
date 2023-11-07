@@ -679,6 +679,7 @@ expr_inner_no_struct = _{
   | break_expr
   | prefix_expr
   | closure_expr
+  | quantifier_expr
   | continue_expr
   | for_expr
   | if_expr
@@ -917,10 +918,18 @@ arg_list = {
 
 closure_expr = {
     attr* ~ (!"forall" ~ "for" ~ generic_param_list)? ~
-    "const"? ~ "static"? ~ "async"? ~ "move"? ~ "forall"? ~ "exists"? ~ "choose"? ~
+    "const"? ~ "static"? ~ "async"? ~ "move"? ~
     closure_param_list ~ ret_type? ~
     attr* ~
     expr
+}
+
+quantifier_expr = {
+    attr* ~
+    ("forall" | "exists" | "choose") ~
+    closure_param_list ~ ret_type? ~
+    attr* ~
+    expr_no_struct
 }
 
 condition = {
